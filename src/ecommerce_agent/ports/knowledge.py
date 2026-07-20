@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class KnowledgeSourcePort(Protocol):
+    async def ingest(self, path: str) -> str: ...
+    async def search(self, query: str, top_k: int = 5) -> list[dict[str, object]]: ...
