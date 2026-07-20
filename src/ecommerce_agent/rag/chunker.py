@@ -1,6 +1,6 @@
-from dataclasses import dataclass
 import hashlib
 import re
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -21,7 +21,7 @@ def chunk_markdown(text: str, source_uri: str, max_chars: int = 1200) -> list[Ch
         if not content:
             return
         for index in range(0, len(content), max_chars):
-            part = content[index:index + max_chars]
+            part = content[index : index + max_chars]
             digest = hashlib.sha256(f"{source_uri}:{heading}:{part}".encode()).hexdigest()[:16]
             chunks.append(Chunk(digest, part, heading, source_uri))
 

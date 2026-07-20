@@ -12,6 +12,13 @@ def test_health_and_write_proposal():
     )
     assert response.status_code == 200
     assert response.json()["status"] == "waiting_approval"
+    approval_id = response.json()["approval_id"]
+    decision = client.post(
+        f"/api/v1/approvals/{approval_id}/decision",
+        json={"decision": "approved", "operator": "tester"},
+    )
+    assert decision.status_code == 200
+    assert decision.json()["status"] == "approved"
 
 
 def test_streaming_chat_emits_named_events():
@@ -20,3 +27,15 @@ def test_streaming_chat_emits_named_events():
     assert response.status_code == 200
     assert "event: run_started" in response.text
     assert "event: final" in response.text
+
+
+def test_markdown_ingestion_is_searchable():
+    client = TestClient(create_app())
+    ingested = client.post(
+        "/api/v1/knowledge/markdown",
+        headers={"x-filename": "policy.md"},
+        content="# 订单权限\n\nadmin:order:list 可以查询订单",
+    )
+    assert ingested.json()["chunk_count"] == 1
+    result = client.post("/api/v1/chat", json={"message": "admin:order:list"})
+    assert result.json()["citations"]

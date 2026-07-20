@@ -8,13 +8,16 @@
 - MarkItDown Markdown 转换入口、标准化和结构化切块。
 - 商品/订单查询 API、SSE 流式事件 API。
 - 只读、需审批、禁止三类风险策略及工具提案 API。
+- LangGraph 1.2 稳定运行时和最小可执行状态图。
+- 内存审批状态机、批准/拒绝 API、幂等决定和审计事件。
+- 独立模式知识库检索、来源引用和入库后即时查询。
 - Vue 3 独立控制台的查询和审批演示页面。
 - 中文设计规格、实施计划、litemall 集成说明和运维说明。
 
 ## 尚待后续迭代
 
 - PostgreSQL/pgvector 持久化和 Redis/Celery 生产任务队列。
-- 完整 LangGraph 多 Agent 图、Human-in-the-loop 持久化恢复。
+- 完整 LangGraph 多 Agent 节点、Checkpointer 和 Human-in-the-loop 持久化恢复。
 - 混合检索、Embedding、Reranker、来源引用和长期记忆。
 - OpenAPI/MCP 通用连接器和只读 SQL 连接器。
 - OIDC/RBAC、OpenTelemetry、Prometheus、评估运行器和 E2E 测试。

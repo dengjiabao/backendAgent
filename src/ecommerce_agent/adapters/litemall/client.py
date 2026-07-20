@@ -33,9 +33,7 @@ class LitemallClient:
         await self.client.aclose()
 
     async def login(self) -> None:
-        response = await self.client.post(
-            "/admin/auth/login", json={"username": self.username, "password": self.password}
-        )
+        response = await self.client.post("/admin/auth/login", json={"username": self.username, "password": self.password})
         response.raise_for_status()
         unwrap_response(response.json())
         self._authenticated = True

@@ -1,12 +1,15 @@
-from collections.abc import AsyncIterator
 import json
+from collections.abc import AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from ecommerce_agent.agents.graph import EcommerceAgentGraph
 from ecommerce_agent.agents.service import AgentService
+from ecommerce_agent.api.approvals import router as approvals_router
+from ecommerce_agent.approvals.service import ApprovalService
 from ecommerce_agent.config import Settings
 
 
@@ -22,6 +25,8 @@ class ProposalRequest(BaseModel):
 def create_app() -> FastAPI:
     settings = Settings()
     service = AgentService(settings)
+    approvals = ApprovalService()
+    graph = EcommerceAgentGraph(service, approvals)
     app = FastAPI(title="企业级电商后台 Agent", version="0.1.0")
     app.add_middleware(
         CORSMiddleware,
@@ -30,6 +35,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.state.agent_service = service
+    app.state.approvals = approvals
+    app.state.agent_graph = graph
+    app.include_router(approvals_router)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -37,11 +45,11 @@ def create_app() -> FastAPI:
 
     @app.post("/api/v1/chat")
     async def chat(request: ChatRequest) -> dict[str, object]:
-        return await service.answer(request.message)
+        return await graph.run(request.message)
 
     @app.post("/api/v1/chat/stream")
     async def chat_stream(request: ChatRequest) -> StreamingResponse:
-        result = await service.answer(request.message)
+        result = await graph.run(request.message)
 
         async def events() -> AsyncIterator[str]:
             yield f"event: run_started\ndata: {json.dumps({'run_id': result['run_id']}, ensure_ascii=False)}\n\n"
@@ -51,7 +59,7 @@ def create_app() -> FastAPI:
 
     @app.post("/api/v1/tools/propose")
     async def propose(request: ProposalRequest) -> dict[str, object]:
-        return service.propose(request.action, request.arguments)
+        return graph.propose(request.action, request.arguments)
 
     @app.post("/api/v1/knowledge/markdown")
     async def ingest_markdown(request: Request) -> dict[str, object]:
@@ -59,7 +67,8 @@ def create_app() -> FastAPI:
         if len(raw) > settings.max_upload_bytes:
             raise HTTPException(status_code=413, detail="文件超过大小限制")
         filename = request.headers.get("x-filename", "upload.md")
-        chunks = service.ingest_markdown(filename, raw.decode("utf-8"))
-        return {"source_uri": filename, "chunks": chunks}
+        text = raw.decode("utf-8")
+        count = graph.ingest(filename, text)
+        return {"source_uri": filename, "chunk_count": count}
 
     return app
