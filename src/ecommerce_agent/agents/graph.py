@@ -2,7 +2,7 @@ from typing import Any, TypedDict, cast
 from uuid import uuid4
 
 from ecommerce_agent.agents.checkpoint import InMemoryRunCheckpoint, RunCheckpointPort
-from ecommerce_agent.agents.nodes import planner_node, reflection_node
+from ecommerce_agent.agents.nodes import analyst_node, planner_node, reflection_node
 from ecommerce_agent.agents.service import AgentService
 from ecommerce_agent.agents.state import AgentState
 from ecommerce_agent.approvals.service import ApprovalService
@@ -23,6 +23,7 @@ class EnterpriseGraphState(TypedDict, total=False):
     result: dict[str, Any]
     plan: list[str]
     reflection: str
+    analysis: str
 
 
 def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -> Any:
@@ -47,6 +48,11 @@ def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -
 
     async def commerce(state: EnterpriseGraphState) -> EnterpriseGraphState:
         return {"result": await service.answer(state["message"])}
+
+    def analyst(state: EnterpriseGraphState) -> EnterpriseGraphState:
+        result = state.get("result", {})
+        observations = result.get("data", [])
+        return cast(EnterpriseGraphState, analyst_node({"observations": observations}))
 
     def knowledge(state: EnterpriseGraphState) -> EnterpriseGraphState:
         return {
@@ -77,13 +83,15 @@ def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -
     graph.add_node("planner", planner)
     graph.add_node("supervisor", supervisor)
     graph.add_node("commerce", commerce)
+    graph.add_node("analyst", analyst)
     graph.add_node("knowledge", knowledge)
     graph.add_node("safety", safety)
     graph.add_node("reflection", reflection)
     graph.add_edge(START, "planner")
     graph.add_edge("planner", "supervisor")
     graph.add_conditional_edges("supervisor", lambda state: state["route"], {"commerce": "commerce", "knowledge": "knowledge", "safety": "safety"})
-    graph.add_edge("commerce", "reflection")
+    graph.add_edge("commerce", "analyst")
+    graph.add_edge("analyst", "reflection")
     graph.add_edge("knowledge", "reflection")
     graph.add_edge("safety", "reflection")
     graph.add_edge("reflection", END)
