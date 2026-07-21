@@ -14,12 +14,15 @@
 - SQLAlchemy 持久化接口、SQLite 独立模式回退和 PostgreSQL 配置。
 - Alembic 初始迁移、PostgreSQL pgvector 扩展初始化。
 - Redis/Celery 后台任务骨架以及 PostgreSQL/Redis/MinIO Docker Compose。
+- pgvector 向量字段、HNSW 索引迁移、Hash/OpenAI-compatible Embedding Provider。
+- 持久化混合检索、确定性离线向量、来源引用和幂等文档入库。
+- Supervisor、Commerce、Knowledge、Safety 多节点 LangGraph 与 Checkpointer。
 - Vue 3 独立控制台的查询和审批演示页面。
 - 中文设计规格、实施计划、litemall 集成说明和运维说明。
 
 ## 尚待后续迭代
 
-- pgvector 向量列、Embedding 和完整 Celery 多模态入库任务。
+- 完整 Celery 多模态入库任务、生产 Reranker 和 PostgreSQL 全文检索优化。
 - 完整 LangGraph 多 Agent 节点、Checkpointer 和 Human-in-the-loop 持久化恢复。
 - 混合检索、Embedding、Reranker、来源引用和长期记忆。
 - OpenAPI/MCP 通用连接器和只读 SQL 连接器。

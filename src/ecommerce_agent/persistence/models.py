@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, String, Text
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import JSON, DateTime, Float, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -53,3 +54,5 @@ class KnowledgeChunkRow(Base):
     heading_path: Mapped[str] = mapped_column(String(1024))
     content: Mapped[str] = mapped_column(Text)
     metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, default=dict)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536).with_variant(JSON, "sqlite"), nullable=True)
+    lexical_weight: Mapped[float] = mapped_column(Float, default=1.0)

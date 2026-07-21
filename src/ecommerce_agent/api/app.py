@@ -11,7 +11,11 @@ from ecommerce_agent.agents.service import AgentService
 from ecommerce_agent.api.approvals import router as approvals_router
 from ecommerce_agent.approvals.service import ApprovalService
 from ecommerce_agent.config import Settings
+from ecommerce_agent.persistence.database import create_database_engine, create_session_factory
 from ecommerce_agent.persistence.factory import build_state_store
+from ecommerce_agent.persistence.knowledge_repository import KnowledgeRepository
+from ecommerce_agent.rag.embeddings import build_embedding_provider
+from ecommerce_agent.rag.hybrid_retriever import PersistentHybridRetriever
 
 
 class ChatRequest(BaseModel):
@@ -27,7 +31,11 @@ def create_app() -> FastAPI:
     settings = Settings()
     service = AgentService(settings)
     approvals = ApprovalService(build_state_store(settings))
-    graph = EcommerceAgentGraph(service, approvals)
+    persistent_retriever = None
+    if settings.state_backend == "database":
+        engine = create_database_engine(settings.database_url)
+        persistent_retriever = PersistentHybridRetriever(KnowledgeRepository(create_session_factory(engine)), build_embedding_provider(settings))
+    graph = EcommerceAgentGraph(service, approvals, persistent_retriever)
     app = FastAPI(title="企业级电商后台 Agent", version="0.1.0")
     app.add_middleware(
         CORSMiddleware,
@@ -69,7 +77,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=413, detail="文件超过大小限制")
         filename = request.headers.get("x-filename", "upload.md")
         text = raw.decode("utf-8")
-        count = graph.ingest(filename, text)
+        count = await graph.ingest_async(filename, text)
         return {"source_uri": filename, "chunk_count": count}
 
     return app

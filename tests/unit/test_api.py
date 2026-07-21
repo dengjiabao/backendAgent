@@ -39,3 +39,10 @@ def test_markdown_ingestion_is_searchable():
     assert ingested.json()["chunk_count"] == 1
     result = client.post("/api/v1/chat", json={"message": "admin:order:list"})
     assert result.json()["citations"]
+
+
+def test_chat_routes_refund_request_to_safety_block():
+    client = TestClient(create_app())
+    result = client.post("/api/v1/chat", json={"message": "给订单退款"}).json()
+    assert result["route"] == "safety"
+    assert result["status"] == "blocked"

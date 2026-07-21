@@ -17,6 +17,7 @@ python -m uvicorn ecommerce_agent.api.app:create_app --factory --reload
 - `STATE_BACKEND=database`：将审批与审计写入 SQLAlchemy 数据库。
 - 运行 `uv run alembic upgrade head` 创建或升级数据库结构。
 - PostgreSQL 模式会在首次迁移时启用 pgvector 扩展。
+- `EMBEDDING_PROVIDER=hash` 可离线运行；生产环境可切换为 `openai` 并配置模型地址、密钥和维度。
 
 ## Redis 与后台任务
 
