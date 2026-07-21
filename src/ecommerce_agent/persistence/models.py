@@ -56,3 +56,11 @@ class KnowledgeChunkRow(Base):
     metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, default=dict)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(1536).with_variant(JSON, "sqlite"), nullable=True)
     lexical_weight: Mapped[float] = mapped_column(Float, default=1.0)
+
+
+class RunCheckpointRow(Base):
+    __tablename__ = "run_checkpoints"
+
+    thread_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    state: Mapped[dict[str, Any]] = mapped_column(JSON)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
