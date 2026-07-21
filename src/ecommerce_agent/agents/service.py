@@ -5,6 +5,8 @@ from ecommerce_agent.config import Settings
 from ecommerce_agent.domain.risk import RiskLevel, RiskPolicy
 from ecommerce_agent.rag.chunker import Chunk, chunk_markdown
 from ecommerce_agent.rag.normalizer import normalize_markdown
+from ecommerce_agent.tools.policy import ToolPolicy
+from ecommerce_agent.tools.registry import ToolRegistry, build_commerce_tools
 
 
 class AgentService:
@@ -12,26 +14,34 @@ class AgentService:
         self.settings = settings
         self.commerce = build_adapter(settings)
         self.risk = RiskPolicy()
+        self.tools = ToolRegistry()
+        for tool in build_commerce_tools(self.commerce):
+            self.tools.register(tool)
+        self.tool_policy = ToolPolicy(self.tools)
         self.documents: dict[str, list[Chunk]] = {}
 
     async def answer(self, message: str) -> dict[str, object]:
         run_id = str(uuid4())
         lower = message.lower()
         if "商品" in message or "product" in lower:
-            products = await self.commerce.search_products(message.replace("商品", "").strip())
+            products = await self.tool_policy.execute(
+                "product.search", {"query": message.replace("商品", "").strip()}
+            )
             return {
                 "run_id": run_id,
                 "type": "commerce",
                 "data": [p.model_dump(mode="json") for p in products],
-                "source": "mock",
+                "source": self.settings.commerce_adapter,
+                "tool": "product.search",
             }
         if "订单" in message or "order" in lower:
-            orders = await self.commerce.list_orders()
+            orders = await self.tool_policy.execute("order.list", {})
             return {
                 "run_id": run_id,
                 "type": "commerce",
                 "data": [o.model_dump(mode="json") for o in orders],
-                "source": "mock",
+                "source": self.settings.commerce_adapter,
+                "tool": "order.list",
             }
         return {
             "run_id": run_id,
