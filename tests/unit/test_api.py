@@ -66,3 +66,11 @@ def test_approval_edit_and_expire_endpoints():
     expired = client.post(f"/api/v1/approvals/{approval_id}/expire")
     assert expired.status_code == 200
     assert expired.json()["status"] == "rejected"
+
+
+def test_local_auth_token_and_identity_endpoint():
+    client = TestClient(create_app())
+    token = client.post("/api/v1/auth/token", json={"subject": "u-1", "tenant_id": "tenant-a", "roles": ["operator"]}).json()["access_token"]
+    identity = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert identity.status_code == 200
+    assert identity.json()["tenant_id"] == "tenant-a"
