@@ -40,11 +40,11 @@
 
 ## 模块 07：身份、安全与租户
 
-- [ ] 定义 Identity/RBAC/Tenant 端口和本地 JWT 实现。
-- [ ] 增加 OIDC 验证适配器和工具角色检查。
-- [ ] 实现手机号、地址、Cookie、Authorization、API Key 脱敏。
-- [ ] 增加 Prompt Injection 检测和文档可信等级。
-- [ ] 通过越权、跨租户和敏感泄漏测试后创建 `docs/modules/07-security-identity/README.md`。
+- [x] 定义 Identity/RBAC/Tenant 端口和本地 JWT 实现。
+- [x] 增加 OIDC 验证适配器和工具角色检查。
+- [x] 实现手机号、地址、Cookie、Authorization、API Key 脱敏。
+- [x] 增加 Prompt Injection 检测和文档可信等级。
+- [x] 通过越权、跨租户和敏感泄漏测试后创建 `docs/modules/07-security-identity/README.md`。
 
 ## 模块 08：可观测性与评估
 
