@@ -38,7 +38,7 @@ class KnowledgeRepository:
                         source_uri=source_uri,
                         heading_path=chunk.heading_path,
                         content=chunk.content,
-                        metadata_json={},
+                        metadata_json=chunk.metadata or {},
                         embedding=embedding,
                         lexical_weight=1.0,
                     )
