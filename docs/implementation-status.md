@@ -25,6 +25,7 @@
 - 模块 05 审批执行与审计已完成：Schema 重校验、编辑、超时拒绝、幂等执行、持久化执行结果和结构化审计。
 - 模块 06 Agent 编排与流式会话已完成：Planner/Analyst/Reflection 节点、公开 SSE 事件、会话检查点、审批暂停与恢复。
 - 模块 07 身份、安全与租户已完成：JWT/OIDC 端口、RBAC、租户隔离、工具角色校验、敏感信息脱敏和 Prompt Injection 检测。
+- 模块 08 可观测性与评估已完成：Trace/Metric 端口、Prometheus 输出、Golden Questions、RAG 指标和安全回归。
 - 中文设计规格、实施计划、litemall 集成说明和运维说明。
 
 ## 尚待后续迭代
