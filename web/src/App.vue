@@ -1,30 +1,23 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { chat, decide, propose } from './api/client'
 
 const message = ref('')
 const result = ref('')
+const conversationId = crypto.randomUUID()
 const proposal = ref<{ status: string; risk: string; approval_id?: string } | null>(null)
 
 async function ask() {
-  const response = await fetch('http://127.0.0.1:8000/api/v1/chat', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message.value }),
-  })
-  result.value = JSON.stringify(await response.json(), null, 2)
+  result.value = JSON.stringify(await chat(message.value, conversationId), null, 2)
 }
 
 async function propose() {
-  const response = await fetch('http://127.0.0.1:8000/api/v1/tools/propose', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'product.update', arguments: { id: 'p-100' } }),
-  })
-  proposal.value = await response.json()
+  proposal.value = await propose('product.update', { id: 'p-100' }) as typeof proposal.value
 }
 
 async function decide(decision: 'approved' | 'rejected') {
   if (!proposal.value?.approval_id) return
-  const response = await fetch(`http://127.0.0.1:8000/api/v1/approvals/${proposal.value.approval_id}/decision`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decision, operator: 'console-user' }),
-  })
-  proposal.value = await response.json()
+  proposal.value = await decide(proposal.value.approval_id, decision) as typeof proposal.value
 }
 </script>
 
