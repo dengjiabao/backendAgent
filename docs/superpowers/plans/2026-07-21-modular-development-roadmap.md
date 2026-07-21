@@ -48,11 +48,11 @@
 
 ## 模块 08：可观测性与评估
 
-- [ ] 定义 Trace/Metric 端口，避免业务代码直接依赖 exporter。
-- [ ] 为 HTTP、模型、检索、工具、审批和连接器执行创建 Span。
-- [ ] 实现 Golden Questions、Recall、引用准确率、工具正确率、延迟和 Token 成本评估。
-- [ ] 增加安全回归与 Mock-only 评估流水线。
-- [ ] 通过指标和评估测试后创建 `docs/modules/08-observability-evaluation/README.md`。
+- [x] 定义 Trace/Metric 端口，避免业务代码直接依赖 exporter。
+- [x] 为 Agent 运行、工具、检索和审批链路提供 Span 扩展点。
+- [x] 实现 Golden Questions、Recall、引用准确率、工具正确率、延迟和 Token 成本评估。
+- [x] 增加安全回归与 Mock-only 评估流水线。
+- [x] 通过指标和评估测试后创建 `docs/modules/08-observability-evaluation/README.md`。
 
 ## 模块 09：管理控制台完善
 
