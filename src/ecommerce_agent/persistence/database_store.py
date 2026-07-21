@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
@@ -24,12 +25,44 @@ class DatabaseStore:
             rows = session.scalars(select(AuditEventRow).order_by(AuditEventRow.created_at)).all()
             return [self._audit(row) for row in rows]
 
-    def create_approval(self, action: str, arguments: dict[str, Any], run_id: str) -> ApprovalRecord:
-        record = ApprovalRecord(str(uuid4()), action, arguments, run_id)
+    def create_approval(
+        self,
+        action: str,
+        arguments: dict[str, Any],
+        run_id: str,
+        idempotency_key: str | None = None,
+        expires_at: datetime | None = None,
+    ) -> ApprovalRecord:
+        with self.sessions() as session:
+            if idempotency_key:
+                existing = session.scalar(select(ApprovalRow).where(ApprovalRow.idempotency_key == idempotency_key))
+                if existing is not None:
+                    return self._approval(existing)
+        record = ApprovalRecord(str(uuid4()), action, arguments, run_id, idempotency_key=idempotency_key, expires_at=expires_at)
         with self.sessions.begin() as session:
             session.add(ApprovalRow(**record.__dict__))
         self.record_audit("approval.proposed", run_id, {"approval_id": record.id, "action": action})
         return record
+
+    def update_approval(self, approval_id: str, arguments: dict[str, Any], operator: str) -> ApprovalRecord:
+        with self.sessions.begin() as session:
+            row = session.get(ApprovalRow, approval_id)
+            if row is None:
+                raise KeyError(approval_id)
+            if row.status == "waiting_approval":
+                row.arguments = arguments
+                row.operator = operator
+                row.edited_at = now()
+            return self._approval(row)
+
+    def mark_executed(self, approval_id: str, result: Any) -> ApprovalRecord:
+        with self.sessions.begin() as session:
+            row = session.get(ApprovalRow, approval_id)
+            if row is None:
+                raise KeyError(approval_id)
+            row.execution_result = result
+            row.executed_at = now()
+            return self._approval(row)
 
     def decide_approval(self, approval_id: str, decision: str, operator: str, comment: str | None = None) -> ApprovalRecord:
         if decision not in {"approved", "rejected"}:
@@ -55,7 +88,22 @@ class DatabaseStore:
 
     @staticmethod
     def _approval(row: ApprovalRow) -> ApprovalRecord:
-        return ApprovalRecord(row.id, row.action, row.arguments, row.run_id, row.status, row.operator, row.comment, row.created_at, row.decided_at)
+        return ApprovalRecord(
+            row.id,
+            row.action,
+            row.arguments,
+            row.run_id,
+            row.status,
+            row.operator,
+            row.comment,
+            row.created_at,
+            row.decided_at,
+            row.idempotency_key,
+            row.expires_at,
+            row.edited_at,
+            row.execution_result,
+            row.executed_at,
+        )
 
     @staticmethod
     def _audit(row: AuditEventRow) -> AuditEvent:

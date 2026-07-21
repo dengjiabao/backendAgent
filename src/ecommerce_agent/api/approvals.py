@@ -10,6 +10,11 @@ class ApprovalDecisionRequest(BaseModel):
     comment: str | None = None
 
 
+class ApprovalEditRequest(BaseModel):
+    arguments: dict[str, Any]
+    operator: str
+
+
 router = APIRouter(prefix="/api/v1/approvals", tags=["审批"])
 
 
@@ -29,6 +34,28 @@ async def list_audit_events(request: Request) -> list[dict[str, Any]]:
 async def decide_approval(approval_id: str, body: ApprovalDecisionRequest, request: Request) -> dict[str, Any]:
     try:
         record = request.app.state.approvals.decide(approval_id, body.decision, body.operator, body.comment)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="审批记录不存在") from exc
+    return cast(dict[str, Any], vars(record))
+
+
+@router.patch("/{approval_id}")
+async def edit_approval(approval_id: str, body: ApprovalEditRequest, request: Request) -> dict[str, Any]:
+    service = request.app.state.approvals
+    try:
+        record = service.edit(approval_id, body.arguments, body.operator)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="审批记录不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return cast(dict[str, Any], vars(record))
+
+
+@router.post("/{approval_id}/expire")
+async def expire_approval(approval_id: str, request: Request) -> dict[str, Any]:
+    service = request.app.state.approvals
+    try:
+        record = service.expire(approval_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="审批记录不存在") from exc
     return cast(dict[str, Any], vars(record))
