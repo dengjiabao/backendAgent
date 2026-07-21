@@ -49,3 +49,32 @@ async def test_ingestion_retries_and_marks_failure(tmp_path: Path):
     assert job.status == "failed"
     assert job.attempts == 2
     assert "转换失败" in (job.error or "")
+
+
+@pytest.mark.asyncio
+async def test_ingestion_uses_injected_storage_and_embedding_ports(tmp_path: Path):
+    source = tmp_path / "guide.md"
+    source.write_text("原始文件", encoding="utf-8")
+
+    class DocumentStore:
+        def __init__(self) -> None:
+            self.saved: tuple[str, str, list[object], list[list[float]]] | None = None
+
+        def save(self, source_uri, source_hash, markdown, chunks, embeddings):
+            self.saved = (source_uri, source_hash, chunks, embeddings)
+            return "document-1"
+
+    class Embeddings:
+        async def embed(self, texts):
+            return [[float(len(text))] for text in texts]
+
+    store = DocumentStore()
+    service = IngestionJobService(
+        converter=FakeConverter(), document_store=store, embedding_provider=Embeddings()
+    )
+    job_id = await service.submit(source)
+    job = await service.run(job_id)
+
+    assert job.document_id == "document-1"
+    assert store.saved is not None
+    assert store.saved[3] == [[4.0]]
