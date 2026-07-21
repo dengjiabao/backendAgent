@@ -6,6 +6,7 @@ from ecommerce_agent.agents.nodes import analyst_node, planner_node, reflection_
 from ecommerce_agent.agents.service import AgentService
 from ecommerce_agent.agents.state import AgentState
 from ecommerce_agent.approvals.service import ApprovalService
+from ecommerce_agent.observability.otel import InMemoryTracer, MetricsRegistry
 from ecommerce_agent.rag.chunker import chunk_markdown
 from ecommerce_agent.rag.hybrid_retriever import PersistentHybridRetriever
 from ecommerce_agent.rag.normalizer import normalize_markdown
@@ -122,12 +123,16 @@ class EcommerceAgentGraph:
         approvals: ApprovalService | None = None,
         persistent_retriever: PersistentHybridRetriever | None = None,
         checkpoint: RunCheckpointPort | None = None,
+        tracer: InMemoryTracer | None = None,
+        metrics: MetricsRegistry | None = None,
     ) -> None:
         self.service = service
         self.approvals = approvals or ApprovalService()
         self.retriever = InMemoryRetriever()
         self.persistent_retriever = persistent_retriever
         self.checkpoint = checkpoint or InMemoryRunCheckpoint()
+        self.tracer = tracer or InMemoryTracer()
+        self.metrics = metrics or MetricsRegistry()
         self.multi_agent = build_multi_agent_graph(service, self.approvals)
 
     def ingest(self, source_uri: str, markdown: str) -> int:
@@ -159,13 +164,22 @@ class EcommerceAgentGraph:
                 "citations": [item.citation for item in evidence],
             }
             self.checkpoint.save(run_id, result)
+            self._observe(result)
             return result
         state = await self.multi_agent.ainvoke({"message": message}, {"configurable": {"thread_id": run_id}})
         result = dict(state["result"])
         result["run_id"] = run_id
         result["route"] = state["route"]
         self.checkpoint.save(run_id, result)
+        self._observe(result)
         return result
+
+    def _observe(self, result: dict[str, Any]) -> None:
+        with self.tracer.start_span("agent.run", {"route": result.get("route", "knowledge")}):
+            pass
+        self.metrics.inc("agent_runs")
+        if result.get("status") == "blocked":
+            self.metrics.inc("agent_failures")
 
     async def resume(self, thread_id: str, patch: dict[str, Any]) -> dict[str, Any]:
         return await self.checkpoint.resume(thread_id, patch)
