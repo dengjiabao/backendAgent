@@ -19,6 +19,12 @@ async def list_approvals(request: Request) -> list[dict[str, Any]]:
     return [item.__dict__ for item in service.store.approvals.values()]
 
 
+@router.get("/audit/events")
+async def list_audit_events(request: Request) -> list[dict[str, Any]]:
+    service = request.app.state.approvals
+    return [vars(item) for item in service.store.audit_events]
+
+
 @router.post("/{approval_id}/decision")
 async def decide_approval(approval_id: str, body: ApprovalDecisionRequest, request: Request) -> dict[str, Any]:
     try:

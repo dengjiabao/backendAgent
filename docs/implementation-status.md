@@ -11,12 +11,15 @@
 - LangGraph 1.2 稳定运行时和最小可执行状态图。
 - 内存审批状态机、批准/拒绝 API、幂等决定和审计事件。
 - 独立模式知识库检索、来源引用和入库后即时查询。
+- SQLAlchemy 持久化接口、SQLite 独立模式回退和 PostgreSQL 配置。
+- Alembic 初始迁移、PostgreSQL pgvector 扩展初始化。
+- Redis/Celery 后台任务骨架以及 PostgreSQL/Redis/MinIO Docker Compose。
 - Vue 3 独立控制台的查询和审批演示页面。
 - 中文设计规格、实施计划、litemall 集成说明和运维说明。
 
 ## 尚待后续迭代
 
-- PostgreSQL/pgvector 持久化和 Redis/Celery 生产任务队列。
+- pgvector 向量列、Embedding 和完整 Celery 多模态入库任务。
 - 完整 LangGraph 多 Agent 节点、Checkpointer 和 Human-in-the-loop 持久化恢复。
 - 混合检索、Embedding、Reranker、来源引用和长期记忆。
 - OpenAPI/MCP 通用连接器和只读 SQL 连接器。

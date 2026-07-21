@@ -52,3 +52,19 @@ python -m pytest -q
 ## 运行模式
 
 默认配置为 `RUNTIME_MODE=standalone`、`COMMERCE_ADAPTER=mock`。后续集成 litemall 或其他项目时，只需实现 `CommerceQueryPort`/`CommerceCommandPort` 连接器并切换配置，不修改 Agent 核心。
+
+状态默认存入内存。需要持久化审批与审计时，设置 `STATE_BACKEND=database` 和 `DATABASE_URL`。本地可使用 SQLite，生产环境建议 PostgreSQL + pgvector。
+
+## 启动基础设施
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d postgres redis minio
+uv run alembic upgrade head
+```
+
+Celery Worker：
+
+```powershell
+uv run celery -A ecommerce_agent.workers.celery_app:celery_app worker --loglevel=INFO
+```
