@@ -27,6 +27,7 @@ class ToolDefinition:
     risk: str = "read"
     timeout_seconds: float = 10.0
     idempotent: bool = True
+    required_roles: frozenset[str] = frozenset()
 
     @property
     def input_schema(self) -> dict[str, Any]:
