@@ -1,6 +1,7 @@
 from typing import Any, TypedDict
 from uuid import uuid4
 
+from ecommerce_agent.agents.checkpoint import InMemoryRunCheckpoint, RunCheckpointPort
 from ecommerce_agent.agents.service import AgentService
 from ecommerce_agent.approvals.service import ApprovalService
 from ecommerce_agent.rag.chunker import chunk_markdown
@@ -96,11 +97,13 @@ class EcommerceAgentGraph:
         service: AgentService,
         approvals: ApprovalService | None = None,
         persistent_retriever: PersistentHybridRetriever | None = None,
+        checkpoint: RunCheckpointPort | None = None,
     ) -> None:
         self.service = service
         self.approvals = approvals or ApprovalService()
         self.retriever = InMemoryRetriever()
         self.persistent_retriever = persistent_retriever
+        self.checkpoint = checkpoint or InMemoryRunCheckpoint()
         self.multi_agent = build_multi_agent_graph(service, self.approvals)
 
     def ingest(self, source_uri: str, markdown: str) -> int:
@@ -115,8 +118,8 @@ class EcommerceAgentGraph:
             await self.persistent_retriever.add_markdown(source_uri, markdown, chunks)
         return count
 
-    async def run(self, message: str) -> dict[str, Any]:
-        run_id = str(uuid4())
+    async def run(self, message: str, thread_id: str | None = None) -> dict[str, Any]:
+        run_id = thread_id or str(uuid4())
         if self.persistent_retriever is not None:
             persistent_evidence = await self.persistent_retriever.search(message)
             evidence = [
@@ -125,17 +128,23 @@ class EcommerceAgentGraph:
         else:
             evidence = self.retriever.search(message)
         if evidence:
-            return {
+            result = {
                 "run_id": run_id,
                 "type": "knowledge",
                 "answer": "\n\n".join(item.chunk.content for item in evidence),
                 "citations": [item.citation for item in evidence],
             }
+            self.checkpoint.save(run_id, result)
+            return result
         state = await self.multi_agent.ainvoke({"message": message}, {"configurable": {"thread_id": run_id}})
         result = dict(state["result"])
         result["run_id"] = run_id
         result["route"] = state["route"]
+        self.checkpoint.save(run_id, result)
         return result
+
+    async def resume(self, thread_id: str, patch: dict[str, Any]) -> dict[str, Any]:
+        return await self.checkpoint.resume(thread_id, patch)
 
     def propose(self, action: str, arguments: dict[str, Any]) -> dict[str, Any]:
         return self.approvals.propose(action, arguments, str(uuid4()))
