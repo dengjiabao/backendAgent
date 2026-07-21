@@ -17,3 +17,4 @@ def test_metrics_registry_counts_runs_and_failures():
     metrics.inc("agent_runs")
     metrics.inc("agent_failures")
     assert metrics.snapshot() == {"agent_runs": 2.0, "agent_failures": 1.0}
+    assert "agent_runs 2.0" in metrics.prometheus_text()

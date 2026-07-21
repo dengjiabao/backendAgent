@@ -48,3 +48,6 @@ class MetricsRegistry:
 
     def snapshot(self) -> dict[str, float]:
         return dict(self._values)
+
+    def prometheus_text(self) -> str:
+        return "\n".join(f"{name} {value}" for name, value in self._values.items()) + "\n"
