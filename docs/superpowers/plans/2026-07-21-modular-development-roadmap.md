@@ -32,11 +32,11 @@
 
 ## 模块 06：Agent 编排与流式会话
 
-- [ ] 将 Planner、Commerce、Knowledge、Analyst、Safety、Reflection 设计为节点端口。
-- [ ] 引入可恢复 Checkpointer 和 conversation/thread ID。
-- [ ] 定义不暴露隐藏思维链的 SSE 事件协议。
-- [ ] 支持审批暂停与恢复、工具观察结果和引用事件。
-- [ ] 创建图路由、流式 API 和恢复流程测试后创建 `docs/modules/06-agent-runtime/README.md`。
+- [x] 将 Planner、Commerce、Knowledge、Analyst、Safety、Reflection 设计为节点端口。
+- [x] 引入可恢复 Checkpointer 和 conversation/thread ID。
+- [x] 定义不暴露隐藏思维链的 SSE 事件协议。
+- [x] 支持审批暂停与恢复、工具观察结果和引用事件。
+- [x] 创建图路由、流式 API 和恢复流程测试后创建 `docs/modules/06-agent-runtime/README.md`。
 
 ## 模块 07：身份、安全与租户
 
