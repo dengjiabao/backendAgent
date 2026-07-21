@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from threading import Lock
-from typing import Any
+from typing import Any, Protocol
 from uuid import uuid4
 
 
@@ -29,6 +29,20 @@ class AuditEvent:
     run_id: str
     payload: dict[str, Any]
     created_at: datetime = field(default_factory=now)
+
+
+class StateStore(Protocol):
+    @property
+    def approvals(self) -> dict[str, ApprovalRecord]: ...
+
+    @property
+    def audit_events(self) -> list[AuditEvent]: ...
+
+    def create_approval(self, action: str, arguments: dict[str, Any], run_id: str) -> ApprovalRecord: ...
+
+    def decide_approval(self, approval_id: str, decision: str, operator: str, comment: str | None = None) -> ApprovalRecord: ...
+
+    def record_audit(self, event: str, run_id: str, payload: dict[str, Any]) -> AuditEvent: ...
 
 
 class InMemoryStore:

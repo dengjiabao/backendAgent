@@ -1,11 +1,11 @@
 from typing import Any
 
 from ecommerce_agent.domain.risk import RiskLevel, RiskPolicy
-from ecommerce_agent.persistence.store import ApprovalRecord, InMemoryStore
+from ecommerce_agent.persistence.store import ApprovalRecord, InMemoryStore, StateStore
 
 
 class ApprovalService:
-    def __init__(self, store: InMemoryStore | None = None, policy: RiskPolicy | None = None) -> None:
+    def __init__(self, store: StateStore | None = None, policy: RiskPolicy | None = None) -> None:
         self.store = store or InMemoryStore()
         self.policy = policy or RiskPolicy()
 

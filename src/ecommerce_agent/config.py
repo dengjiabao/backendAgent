@@ -15,6 +15,9 @@ class Settings(BaseModel):
     litemall_base_url: str = "http://127.0.0.1:8080"
     litemall_username: str = ""
     litemall_password: SecretStr | None = None
+    state_backend: Literal["memory", "database"] = "memory"
+    database_url: str = "sqlite+pysqlite:///./data/ecommerce_agent.db"
+    redis_url: str = "redis://127.0.0.1:6379/0"
 
     def __init__(self, _env_file: str | None = ".env", **data: Any) -> None:
         del _env_file
@@ -27,6 +30,9 @@ class Settings(BaseModel):
             "max_upload_bytes": int(os.getenv("MAX_UPLOAD_BYTES", str(50 * 1024 * 1024))),
             "litemall_base_url": os.getenv("LITEMALL_BASE_URL", "http://127.0.0.1:8080"),
             "litemall_username": os.getenv("LITEMALL_USERNAME", ""),
+            "state_backend": os.getenv("STATE_BACKEND", "memory"),
+            "database_url": os.getenv("DATABASE_URL", "sqlite+pysqlite:///./data/ecommerce_agent.db"),
+            "redis_url": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
         }
         if api_key := os.getenv("MODEL_API_KEY"):
             env_data["model_api_key"] = SecretStr(api_key)

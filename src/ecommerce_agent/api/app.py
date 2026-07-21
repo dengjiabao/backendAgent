@@ -11,6 +11,7 @@ from ecommerce_agent.agents.service import AgentService
 from ecommerce_agent.api.approvals import router as approvals_router
 from ecommerce_agent.approvals.service import ApprovalService
 from ecommerce_agent.config import Settings
+from ecommerce_agent.persistence.factory import build_state_store
 
 
 class ChatRequest(BaseModel):
@@ -25,7 +26,7 @@ class ProposalRequest(BaseModel):
 def create_app() -> FastAPI:
     settings = Settings()
     service = AgentService(settings)
-    approvals = ApprovalService()
+    approvals = ApprovalService(build_state_store(settings))
     graph = EcommerceAgentGraph(service, approvals)
     app = FastAPI(title="企业级电商后台 Agent", version="0.1.0")
     app.add_middleware(
