@@ -78,3 +78,25 @@ async def test_ingestion_uses_injected_storage_and_embedding_ports(tmp_path: Pat
     assert job.document_id == "document-1"
     assert store.saved is not None
     assert store.saved[3] == [[4.0]]
+
+
+@pytest.mark.asyncio
+async def test_ingestion_stores_raw_and_markdown_snapshots(tmp_path: Path):
+    source = tmp_path / "guide.md"
+    source.write_text("原始文件", encoding="utf-8")
+
+    class ObjectStore:
+        def __init__(self) -> None:
+            self.keys: list[str] = []
+
+        def put(self, key: str, content: bytes) -> str:
+            self.keys.append(key)
+            return key
+
+    object_store = ObjectStore()
+    service = IngestionJobService(converter=FakeConverter(), object_store=object_store)
+    job = await service.run(await service.submit(source))
+
+    assert job.raw_uri and job.markdown_uri
+    assert any(key.startswith("raw/") for key in object_store.keys)
+    assert any(key.startswith("markdown/") for key in object_store.keys)

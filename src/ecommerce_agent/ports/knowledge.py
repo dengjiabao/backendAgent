@@ -22,3 +22,10 @@ class KnowledgeDocumentStorePort(Protocol):
 
 class EmbeddingPort(Protocol):
     async def embed(self, texts: list[str]) -> list[list[float]]: ...
+
+
+class ObjectStorePort(Protocol):
+    """保存原始文件和 Markdown 快照的对象存储端口。"""
+
+    def put(self, key: str, content: bytes) -> str: ...
+    def get(self, uri: str) -> bytes: ...

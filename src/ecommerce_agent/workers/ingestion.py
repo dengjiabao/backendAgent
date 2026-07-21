@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
-from ecommerce_agent.ports.knowledge import EmbeddingPort, KnowledgeDocumentStorePort
+from ecommerce_agent.ports.knowledge import EmbeddingPort, KnowledgeDocumentStorePort, ObjectStorePort
 from ecommerce_agent.rag.chunker import Chunk, chunk_markdown
 from ecommerce_agent.rag.markitdown_converter import MarkItDownConverter
 from ecommerce_agent.rag.normalizer import normalize_markdown
@@ -27,6 +27,8 @@ class IngestionJob:
     error: str | None = None
     chunks: list[Chunk] = field(default_factory=list)
     document_id: str | None = None
+    raw_uri: str | None = None
+    markdown_uri: str | None = None
 
 
 class IngestionJobService:
@@ -38,6 +40,7 @@ class IngestionJobService:
         max_retries: int = 3,
         document_store: KnowledgeDocumentStorePort | None = None,
         embedding_provider: EmbeddingPort | None = None,
+        object_store: ObjectStorePort | None = None,
     ) -> None:
         self.converter = converter or MarkItDownConverter()
         self.max_retries = max_retries
@@ -45,6 +48,7 @@ class IngestionJobService:
         self._hash_to_job: dict[str, str] = {}
         self.document_store = document_store
         self.embedding_provider = embedding_provider
+        self.object_store = object_store
 
     async def submit(self, path: str | Path) -> str:
         file_path = Path(path)
@@ -65,7 +69,15 @@ class IngestionJobService:
         while job.attempts < self.max_retries:
             job.attempts += 1
             try:
+                raw = Path(job.source_uri).read_bytes()
+                if self.object_store is not None:
+                    name = Path(job.source_uri).name
+                    job.raw_uri = self.object_store.put(f"raw/{job.source_hash}/{name}", raw)
                 markdown = normalize_markdown(self.converter.convert(job.source_uri))
+                if self.object_store is not None:
+                    job.markdown_uri = self.object_store.put(
+                        f"markdown/{job.source_hash}.md", markdown.encode("utf-8")
+                    )
                 job.chunks = chunk_markdown(markdown, job.source_uri)
                 if self.document_store is not None:
                     embeddings: Sequence[Sequence[float]] = []

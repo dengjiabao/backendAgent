@@ -2,7 +2,7 @@ import hashlib
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from ecommerce_agent.persistence.models import KnowledgeChunkRow, KnowledgeDocumentRow
@@ -48,6 +48,18 @@ class KnowledgeRepository:
     def list_chunks(self) -> list[KnowledgeChunkRow]:
         with self.sessions() as session:
             return list(session.scalars(select(KnowledgeChunkRow)).all())
+
+    def search_lexical(self, query: str, limit: int = 50) -> list[KnowledgeChunkRow]:
+        """按数据库方言执行关键词检索，SQLite 用 LIKE 作为独立模式回退。"""
+
+        terms = [term for term in query.split() if term]
+        with self.sessions() as session:
+            if session.bind is not None and session.bind.dialect.name == "postgresql":
+                statement = select(KnowledgeChunkRow).where(KnowledgeChunkRow.content.match(query)).limit(limit)
+            else:
+                conditions = [KnowledgeChunkRow.content.ilike(f"%{term}%") for term in terms]
+                statement = select(KnowledgeChunkRow).where(or_(*conditions)).limit(limit) if conditions else select(KnowledgeChunkRow).limit(limit)
+            return list(session.scalars(statement).all())
 
     def count_documents(self) -> int:
         with self.sessions() as session:

@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from ecommerce_agent.persistence.knowledge_repository import KnowledgeRepository
 from ecommerce_agent.persistence.models import KnowledgeChunkRow
 from ecommerce_agent.rag.embeddings import EmbeddingProvider
+from ecommerce_agent.rag.query import rewrite_query
+from ecommerce_agent.rag.reranker import RerankerPort
 from ecommerce_agent.rag.retriever import AccessScope
 
 
@@ -31,9 +33,15 @@ def _cosine(left: list[float], right: list[float]) -> float:
 
 
 class PersistentHybridRetriever:
-    def __init__(self, repository: KnowledgeRepository, embeddings: EmbeddingProvider) -> None:
+    def __init__(
+        self,
+        repository: KnowledgeRepository,
+        embeddings: EmbeddingProvider,
+        reranker: RerankerPort | None = None,
+    ) -> None:
         self.repository = repository
         self.embeddings = embeddings
+        self.reranker = reranker
 
     async def add_markdown(self, source_uri: str, markdown: str, chunks: Sequence[object]) -> str:
         from ecommerce_agent.rag.chunker import Chunk
@@ -45,8 +53,9 @@ class PersistentHybridRetriever:
     async def search(
         self, query: str, top_k: int = 5, scope: AccessScope | None = None
     ) -> list[HybridResult]:
-        query_vector = (await self.embeddings.embed([query]))[0]
-        query_tokens = _tokens(query)
+        effective_query = rewrite_query(query)
+        query_vector = (await self.embeddings.embed([effective_query]))[0]
+        query_tokens = _tokens(effective_query)
         rows = [row for row in self.repository.list_chunks() if self._visible(row.source_uri, row.metadata_json, scope)]
         vector_ranked: list[tuple[float, KnowledgeChunkRow]] = []
         lexical_ranked: list[tuple[float, KnowledgeChunkRow]] = []
@@ -67,7 +76,7 @@ class PersistentHybridRetriever:
             scores[row.id] = scores.get(row.id, 0.0) + 1 / (60 + rank)
         for rank, (_, row) in enumerate(lexical_ranked, start=1):
             scores[row.id] = scores.get(row.id, 0.0) + 1 / (60 + rank)
-        return [
+        results = [
             HybridResult(
                 by_id[row_id].id,
                 by_id[row_id].content,
@@ -78,6 +87,9 @@ class PersistentHybridRetriever:
             )
             for row_id, score in sorted(scores.items(), key=lambda item: item[1], reverse=True)[:top_k]
         ]
+        if self.reranker is not None:
+            results = [item for item in self.reranker.rerank(effective_query, results, scope) if isinstance(item, HybridResult)]
+        return results[:top_k]
 
     @staticmethod
     def _visible(source_uri: str, metadata: dict[str, object] | None, scope: AccessScope | None) -> bool:

@@ -21,6 +21,7 @@
 - Tool Registry 与 ToolPolicy：按连接器能力注册 JSON Schema 工具，查询工具执行前统一做风险和参数校验；Mock/litemall 只读商品、订单工具已接入 AgentService。
 - MarkItDown 入库任务服务：支持源文件 SHA-256 幂等、标准化/结构切块、任务状态查询及失败重试；可作为 Celery Worker 的执行核心。
 - 知识入库已通过 `KnowledgeDocumentStorePort` 和 `EmbeddingPort` 解耦具体存储与模型，后续接入 PostgreSQL、MinIO 或其他 Embedding 服务无需修改任务核心。
+- 模块 04 知识存储与混合检索已完成：对象快照端口/MinIO 适配、权限过滤、RRF、关键词检索、查询改写、上下文压缩、可替换 Reranker 和 Recall@K/MRR 评估。
 - 中文设计规格、实施计划、litemall 集成说明和运维说明。
 
 ## 尚待后续迭代

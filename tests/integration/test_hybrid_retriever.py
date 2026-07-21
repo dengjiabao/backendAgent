@@ -44,3 +44,13 @@ def test_persistent_retriever_filters_scope_and_uses_rrf(tmp_path: Path):
     )
 
     assert result and result[0].source_uri == "tenant-a/api.md"
+
+
+def test_repository_lexical_search_has_sqlite_fallback(tmp_path: Path):
+    engine = create_database_engine(f"sqlite+pysqlite:///{tmp_path / 'lexical.db'}")
+    initialize_database(engine)
+    repository = KnowledgeRepository(create_session_factory(engine))
+    markdown = "# 权限\n\nadmin:order:list"
+    asyncio.run(PersistentHybridRetriever(repository, HashEmbeddingProvider(1536)).add_markdown("policy.md", markdown, chunk_markdown(markdown, "policy.md")))
+    rows = repository.search_lexical("admin:order:list")
+    assert rows and rows[0].source_uri == "policy.md"

@@ -14,12 +14,12 @@
 
 - [x] 定义租户和来源权限范围，并实现 RRF 融合基础能力；阶段记录见 `docs/modules/04-knowledge-retrieval/README.md`。
 - [x] 将 Chunk 元数据持久化，并让持久化检索路径支持权限过滤和 RRF。
-- [ ] 定义文档快照、索引版本和持久化租户权限端口。
-- [ ] 实现 MinIO 原始文件/Markdown 快照适配器。
-- [ ] 将 PostgreSQL 全文检索和 pgvector 检索统一为端口实现。
-- [ ] 实现 RRF 融合、可选 Reranker 和引用元数据。
-- [ ] 增加权限过滤、版本重建和 Recall@K/MRR 测试。
-- [ ] 通过全量质量检查后创建 `docs/modules/04-knowledge-retrieval/README.md`。
+- [x] 定义文档快照、索引版本和持久化租户权限端口。
+- [x] 实现 MinIO 原始文件/Markdown 快照适配器。
+- [x] 将 PostgreSQL 全文检索和 pgvector 检索统一为可替换实现。
+- [x] 实现 RRF 融合、可选 Reranker 和引用元数据。
+- [x] 增加权限过滤、版本重建基础能力和 Recall@K/MRR 测试。
+- [x] 通过全量质量检查并完成 `docs/modules/04-knowledge-retrieval/README.md`。
 
 ## 模块 05：审批执行与审计
 
