@@ -21,11 +21,17 @@ from ecommerce_agent.rag.hybrid_retriever import PersistentHybridRetriever
 
 class ChatRequest(BaseModel):
     message: str
+    conversation_id: str | None = None
 
 
 class ProposalRequest(BaseModel):
     action: str
     arguments: dict[str, object] = Field(default_factory=dict)
+
+
+class ResumeRequest(BaseModel):
+    conversation_id: str
+    patch: dict[str, object] = Field(default_factory=dict)
 
 
 def create_app() -> FastAPI:
@@ -55,17 +61,24 @@ def create_app() -> FastAPI:
 
     @app.post("/api/v1/chat")
     async def chat(request: ChatRequest) -> dict[str, object]:
-        return await graph.run(request.message)
+        return await graph.run(request.message, request.conversation_id)
 
     @app.post("/api/v1/chat/stream")
     async def chat_stream(request: ChatRequest) -> StreamingResponse:
-        result = await graph.run(request.message)
+        result = await graph.run(request.message, request.conversation_id)
 
         async def events() -> AsyncIterator[str]:
             for event in await collect_public_events(result):
                 yield f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
         return StreamingResponse(events(), media_type="text/event-stream")
+
+    @app.post("/api/v1/chat/resume")
+    async def resume_chat(request: ResumeRequest) -> dict[str, object]:
+        try:
+            return await graph.resume(request.conversation_id, request.patch)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="会话检查点不存在") from exc
 
     @app.post("/api/v1/tools/propose")
     async def propose(request: ProposalRequest) -> dict[str, object]:

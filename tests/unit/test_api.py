@@ -29,6 +29,15 @@ def test_streaming_chat_emits_named_events():
     assert "event: final" in response.text
 
 
+def test_streaming_chat_accepts_conversation_id_and_resume_patch():
+    client = TestClient(create_app())
+    response = client.post("/api/v1/chat/stream", json={"message": "修改商品 p-100", "conversation_id": "c-1"})
+    assert "event: approval_required" in response.text
+    resumed = client.post("/api/v1/chat/resume", json={"conversation_id": "c-1", "patch": {"status": "approved"}})
+    assert resumed.status_code == 200
+    assert resumed.json()["status"] == "approved"
+
+
 def test_markdown_ingestion_is_searchable():
     client = TestClient(create_app())
     ingested = client.post(
