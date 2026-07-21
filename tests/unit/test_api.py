@@ -55,3 +55,14 @@ def test_chat_routes_refund_request_to_safety_block():
     result = client.post("/api/v1/chat", json={"message": "给订单退款"}).json()
     assert result["route"] == "safety"
     assert result["status"] == "blocked"
+
+
+def test_approval_edit_and_expire_endpoints():
+    client = TestClient(create_app())
+    proposal = client.post("/api/v1/tools/propose", json={"action": "product.update", "arguments": {"id": "p-1"}}).json()
+    approval_id = proposal["approval_id"]
+    edited = client.patch(f"/api/v1/approvals/{approval_id}", json={"arguments": {"id": "p-2"}, "operator": "tester"})
+    assert edited.status_code == 200
+    expired = client.post(f"/api/v1/approvals/{approval_id}/expire")
+    assert expired.status_code == 200
+    assert expired.json()["status"] == "rejected"
