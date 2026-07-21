@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from ecommerce_agent.agents.checkpoint import DatabaseRunCheckpoint
 from ecommerce_agent.agents.events import collect_public_events
 from ecommerce_agent.agents.graph import EcommerceAgentGraph
 from ecommerce_agent.agents.service import AgentService
@@ -39,10 +40,13 @@ def create_app() -> FastAPI:
     service = AgentService(settings)
     approvals = ApprovalService(build_state_store(settings))
     persistent_retriever = None
+    checkpoint = None
     if settings.state_backend == "database":
         engine = create_database_engine(settings.database_url)
-        persistent_retriever = PersistentHybridRetriever(KnowledgeRepository(create_session_factory(engine)), build_embedding_provider(settings))
-    graph = EcommerceAgentGraph(service, approvals, persistent_retriever)
+        sessions = create_session_factory(engine)
+        persistent_retriever = PersistentHybridRetriever(KnowledgeRepository(sessions), build_embedding_provider(settings))
+        checkpoint = DatabaseRunCheckpoint(sessions)
+    graph = EcommerceAgentGraph(service, approvals, persistent_retriever, checkpoint)
     app = FastAPI(title="企业级电商后台 Agent", version="0.1.0")
     app.add_middleware(
         CORSMiddleware,
