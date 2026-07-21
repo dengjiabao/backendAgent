@@ -1,8 +1,10 @@
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 from uuid import uuid4
 
 from ecommerce_agent.agents.checkpoint import InMemoryRunCheckpoint, RunCheckpointPort
+from ecommerce_agent.agents.nodes import planner_node, reflection_node
 from ecommerce_agent.agents.service import AgentService
+from ecommerce_agent.agents.state import AgentState
 from ecommerce_agent.approvals.service import ApprovalService
 from ecommerce_agent.rag.chunker import chunk_markdown
 from ecommerce_agent.rag.hybrid_retriever import PersistentHybridRetriever
@@ -19,6 +21,8 @@ class EnterpriseGraphState(TypedDict, total=False):
     message: str
     route: str
     result: dict[str, Any]
+    plan: list[str]
+    reflection: str
 
 
 def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -> Any:
@@ -27,6 +31,9 @@ def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -
     from langgraph.graph import END, START, StateGraph
 
     graph = StateGraph(EnterpriseGraphState)
+
+    def planner(state: EnterpriseGraphState) -> EnterpriseGraphState:
+        return cast(EnterpriseGraphState, planner_node(cast(AgentState, state)))
 
     def supervisor(state: EnterpriseGraphState) -> EnterpriseGraphState:
         message = state["message"]
@@ -62,15 +69,24 @@ def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -
             action = "product.update"
         return {"result": approvals.propose(action, {"request": message}, str(uuid4()))}
 
+    def reflection(state: EnterpriseGraphState) -> EnterpriseGraphState:
+        result = state.get("result", {})
+        check = reflection_node({"answer": str(result.get("answer", "")), "citations": result.get("citations", [])})
+        return {"reflection": check["reflection"]}
+
+    graph.add_node("planner", planner)
     graph.add_node("supervisor", supervisor)
     graph.add_node("commerce", commerce)
     graph.add_node("knowledge", knowledge)
     graph.add_node("safety", safety)
-    graph.add_edge(START, "supervisor")
+    graph.add_node("reflection", reflection)
+    graph.add_edge(START, "planner")
+    graph.add_edge("planner", "supervisor")
     graph.add_conditional_edges("supervisor", lambda state: state["route"], {"commerce": "commerce", "knowledge": "knowledge", "safety": "safety"})
-    graph.add_edge("commerce", END)
-    graph.add_edge("knowledge", END)
-    graph.add_edge("safety", END)
+    graph.add_edge("commerce", "reflection")
+    graph.add_edge("knowledge", "reflection")
+    graph.add_edge("safety", "reflection")
+    graph.add_edge("reflection", END)
     return graph.compile(checkpointer=InMemorySaver())
 
 

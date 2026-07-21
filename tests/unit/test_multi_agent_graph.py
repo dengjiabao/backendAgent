@@ -16,6 +16,7 @@ def test_supervisor_routes_commerce_query():
     result = invoke("查询订单", "commerce-thread")
     assert result["route"] == "commerce"
     assert result["result"]["type"] == "commerce"
+    assert result["plan"]
 
 
 def test_supervisor_routes_write_to_safety():
