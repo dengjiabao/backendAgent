@@ -12,7 +12,8 @@
 
 ## 模块 04：知识存储与混合检索
 
-- [ ] 定义文档快照、索引版本和租户权限端口。
+- [x] 定义租户和来源权限范围，并实现 RRF 融合基础能力；阶段记录见 `docs/modules/04-knowledge-retrieval/README.md`。
+- [ ] 定义文档快照、索引版本和持久化租户权限端口。
 - [ ] 实现 MinIO 原始文件/Markdown 快照适配器。
 - [ ] 将 PostgreSQL 全文检索和 pgvector 检索统一为端口实现。
 - [ ] 实现 RRF 融合、可选 Reranker 和引用元数据。

@@ -1,6 +1,7 @@
 import hashlib
 import re
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -9,6 +10,7 @@ class Chunk:
     content: str
     heading_path: str
     source_uri: str
+    metadata: dict[str, Any] | None = None
 
 
 def chunk_markdown(text: str, source_uri: str, max_chars: int = 1200) -> list[Chunk]:
