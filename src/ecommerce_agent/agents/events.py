@@ -7,6 +7,9 @@ async def collect_public_events(result: dict[str, Any]) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = [{"type": "run_started", "run_id": result.get("run_id")}]
     if result.get("tool"):
         events.append({"type": "tool_result", "tool": result["tool"], "data": result.get("data", [])})
+    if result.get("action"):
+        arguments = result.get("arguments", {})
+        events.append({"type": "tool_proposed", "tool": result["action"], "parameter_keys": list(arguments)})
     if result.get("citations"):
         events.append({"type": "citation", "citations": result["citations"]})
     if result.get("status") == "waiting_approval":
