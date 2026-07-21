@@ -32,3 +32,15 @@ export function decide(approvalId: string, decision: 'approved' | 'rejected'): P
 export function listApprovals(): Promise<ChatResult[]> {
   return request<ChatResult[]>('/api/v1/approvals')
 }
+
+export function auditEvents(): Promise<ChatResult[]> {
+  return request<ChatResult[]>('/api/v1/approvals/audit/events')
+}
+
+export async function uploadMarkdown(file: File): Promise<ChatResult> {
+  const response = await fetch(`${API_BASE}/api/v1/knowledge/markdown`, {
+    method: 'POST', headers: { 'Content-Type': 'text/markdown', 'x-filename': file.name }, body: await file.text(),
+  })
+  if (!response.ok) throw new Error(`上传失败（${response.status}）`)
+  return response.json() as Promise<ChatResult>
+}
