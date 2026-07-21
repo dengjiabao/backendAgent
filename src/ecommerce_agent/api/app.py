@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from ecommerce_agent.agents.events import collect_public_events
 from ecommerce_agent.agents.graph import EcommerceAgentGraph
 from ecommerce_agent.agents.service import AgentService
 from ecommerce_agent.api.approvals import router as approvals_router
@@ -61,8 +62,8 @@ def create_app() -> FastAPI:
         result = await graph.run(request.message)
 
         async def events() -> AsyncIterator[str]:
-            yield f"event: run_started\ndata: {json.dumps({'run_id': result['run_id']}, ensure_ascii=False)}\n\n"
-            yield f"event: final\ndata: {json.dumps(result, ensure_ascii=False)}\n\n"
+            for event in await collect_public_events(result):
+                yield f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
         return StreamingResponse(events(), media_type="text/event-stream")
 
