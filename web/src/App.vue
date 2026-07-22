@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { auditEvents, chat, decide, listApprovals, propose, uploadMarkdown } from './api/client'
+import { auditEvents, chat, decide as decideApproval, listApprovals, propose as proposeAction, uploadMarkdown } from './api/client'
 
 const message = ref('')
 const result = ref('')
@@ -29,12 +29,12 @@ async function ask() {
 }
 
 async function propose() {
-  proposal.value = await propose('product.update', { id: 'p-100' }) as typeof proposal.value
+  proposal.value = await proposeAction('product.update', { id: 'p-100' }) as typeof proposal.value
 }
 
 async function decide(decision: 'approved' | 'rejected') {
   if (!proposal.value?.approval_id) return
-  proposal.value = await decide(proposal.value.approval_id, decision) as typeof proposal.value
+  proposal.value = await decideApproval(proposal.value.approval_id, decision) as typeof proposal.value
 }
 </script>
 

@@ -13,15 +13,15 @@
 | 编号 | 模块 | 当前状态 | 主要边界 |
 | --- | --- | --- | --- |
 | 01 | 核心领域与运行基础 | 已完成 | 配置、领域模型、风险枚举、持久化基础、API 健康检查 |
-| 02 | 连接器与工具治理 | 已完成基础版本 | Commerce Port、Mock/litemall、Tool Registry、风险策略 |
-| 03 | 知识入库 | 已完成基础版本 | MarkItDown、标准化、切块、幂等任务、存储与 Embedding 端口 |
-| 04 | 知识存储与混合检索 | 待开发 | MinIO 快照、版本索引、全文检索、RRF、Reranker、权限过滤 |
-| 05 | 审批执行与审计 | 待开发 | 写操作执行器、参数重校验、幂等键、超时拒绝、审计事件 |
-| 06 | Agent 编排与流式会话 | 待开发 | Planner、Analyst、Reflection、可恢复 Checkpointer、SSE 事件 |
-| 07 | 身份、安全与租户 | 待开发 | JWT/OIDC、RBAC、租户隔离、脱敏、Prompt Injection 防护 |
-| 08 | 可观测性与评估 | 待开发 | OpenTelemetry、Prometheus、Golden Questions、回归指标 |
-| 09 | 管理控制台 | 基础页面已完成 | 对话、审批、知识库、运行轨迹、评估和配置页面 |
-| 10 | 部署与集成验收 | 基础设施已完成 | Docker、MinIO/Celery 生产配置、冒烟脚本、集成文档 |
+| 02 | 连接器与工具治理 | 已完成 | Commerce Port、Mock/litemall、Tool Registry、风险策略 |
+| 03 | 知识入库 | 已完成 | MarkItDown、标准化、切块、幂等任务、存储与 Embedding 端口 |
+| 04 | 知识存储与混合检索 | 已完成 | MinIO 快照、版本索引、全文检索、RRF、Reranker、权限过滤 |
+| 05 | 审批执行与审计 | 已完成 | 写操作执行器、参数重校验、幂等键、超时拒绝、审计事件 |
+| 06 | Agent 编排与流式会话 | 已完成 | Planner、Analyst、Reflection、可恢复 Checkpointer、SSE 事件 |
+| 07 | 身份、安全与租户 | 已完成 | JWT/OIDC、RBAC、租户隔离、脱敏、Prompt Injection 防护 |
+| 08 | 可观测性与评估 | 已完成 | OpenTelemetry、Prometheus、Golden Questions、回归指标 |
+| 09 | 管理控制台 | 已完成 | 对话、审批、知识库、运行轨迹、评估和配置页面 |
+| 10 | 部署与集成验收 | 已完成 | Docker、MinIO/Celery 生产配置、冒烟脚本、集成文档 |
 
 ## 完成记录规范
 
