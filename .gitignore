@@ -7,5 +7,7 @@ __pycache__/
 dist/
 web/node_modules/
 web/dist/
+web/test-results/
+web/playwright-report/
 data/
 *.pyc

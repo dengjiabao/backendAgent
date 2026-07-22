@@ -76,6 +76,11 @@ services:
       REDIS_URL: redis://redis:6379/0
     depends_on:
       redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A ecommerce_agent.workers.celery_app:celery_app inspect ping --timeout=5 | grep -q pong"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
     deploy:
       resources:
         limits: { cpus: "2.0", memory: 1G }

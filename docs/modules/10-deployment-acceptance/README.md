@@ -14,9 +14,12 @@ Compose 只负责注入外部服务地址和凭据；业务代码仍通过配置
 - `uv run ruff check .`
 - `uv run mypy src`
 - `npm --prefix web run build`
+- `npm --prefix web run typecheck`
+- `npm --prefix web run e2e`（自动启动 API 与 Vite，使用 Playwright Chromium）
 - `docker compose config --quiet`
 - `uv run python scripts/smoke.py --base-url http://127.0.0.1:8000`（需要 API 已启动）
+- `docker compose up -d --build` 后检查 `docker compose ps`，所有服务应为 healthy
 
 ## 已知限制
 
-本地环境未必有 Docker daemon，因此 `docker compose config` 只能证明静态配置可解析，不能替代容器运行验收。Playwright 浏览器运行时仍未安装，控制台继续以构建验证为基线。
+Playwright Chromium 需要首次执行 `npx playwright install chromium` 下载浏览器。Worker 不监听 HTTP 端口，使用 Celery `inspect ping` 健康检查；API 使用 pgvector 镜像并在初始化时启用 vector 扩展。
