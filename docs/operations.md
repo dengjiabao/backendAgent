@@ -7,6 +7,19 @@ $env:PYTHONPATH = "src"
 python -m uvicorn ecommerce_agent.api.app:create_app --factory --reload
 ```
 
+## Compose 部署
+
+复制 `.env.example` 为 `.env` 后按生产环境替换 `JWT_SECRET`、`POSTGRES_PASSWORD` 和 `MINIO_ROOT_PASSWORD`，再执行：
+
+```powershell
+docker compose config --quiet
+docker compose up -d postgres redis minio
+uv run alembic upgrade head
+docker compose up -d api worker
+```
+
+API 和依赖服务均带健康检查；Compose 的 `deploy.resources.limits` 提供基础 CPU/内存上限。未提供生产密钥时，API 会在启动阶段拒绝默认值。
+
 ## 健康检查
 
 访问 `GET /health`。返回的 `mode` 用于确认当前是 `standalone` 还是 `integrated`。

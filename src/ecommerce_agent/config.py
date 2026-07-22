@@ -5,6 +5,7 @@ from pydantic import BaseModel, SecretStr
 
 
 class Settings(BaseModel):
+    app_env: Literal["development", "production"] = "development"
     runtime_mode: Literal["standalone", "integrated"] = "standalone"
     commerce_adapter: str = "mock"
     model_base_url: str = "https://api.openai.com/v1"
@@ -26,6 +27,7 @@ class Settings(BaseModel):
     def __init__(self, _env_file: str | None = ".env", **data: Any) -> None:
         del _env_file
         env_data: dict[str, Any] = {
+            "app_env": os.getenv("APP_ENV", "development"),
             "runtime_mode": os.getenv("RUNTIME_MODE", "standalone"),
             "commerce_adapter": os.getenv("COMMERCE_ADAPTER", "mock"),
             "model_base_url": os.getenv("MODEL_BASE_URL", "https://api.openai.com/v1"),
@@ -48,6 +50,10 @@ class Settings(BaseModel):
             env_data["litemall_password"] = SecretStr(litemall_password)
         env_data.update(data)
         super().__init__(**env_data)
+        if self.app_env == "production":
+            secret = self.jwt_secret.get_secret_value()
+            if not secret or secret == "development-only-change-me" or len(secret) < 32:
+                raise ValueError("生产环境必须设置长度至少 32 的 JWT_SECRET")
 
 
 settings = Settings()

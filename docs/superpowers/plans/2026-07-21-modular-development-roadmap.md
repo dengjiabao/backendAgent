@@ -63,8 +63,8 @@
 
 ## 模块 10：部署与集成验收
 
-- [ ] 将 API、Worker、PostgreSQL、Redis、MinIO 的配置拆分为可替换服务。
-- [ ] 增加非 root、健康检查、资源限制和生产 Secret 约束。
-- [ ] 编写中文运维、litemall、OpenAPI、MCP 和安全文档。
-- [ ] 编写冒烟脚本覆盖健康检查、入库、查询、审批和审计。
-- [ ] 通过 Python、前端、Compose 和冒烟验收后创建 `docs/modules/10-deployment-acceptance/README.md`。
+- [x] 将 API、Worker、PostgreSQL、Redis、MinIO 的配置拆分为可替换服务。
+- [x] 增加非 root、健康检查、资源限制和生产 Secret 约束。
+- [x] 编写中文运维、litemall、OpenAPI、MCP 和安全文档。
+- [x] 编写冒烟脚本覆盖健康检查、入库、查询、审批和审计。
+- [x] 通过 Python、前端、Compose 和冒烟验收后创建 `docs/modules/10-deployment-acceptance/README.md`。
