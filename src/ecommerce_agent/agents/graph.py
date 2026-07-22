@@ -1,8 +1,12 @@
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 from uuid import uuid4
 
+from ecommerce_agent.agents.checkpoint import InMemoryRunCheckpoint, RunCheckpointPort
+from ecommerce_agent.agents.nodes import analyst_node, planner_node, reflection_node
 from ecommerce_agent.agents.service import AgentService
+from ecommerce_agent.agents.state import AgentState
 from ecommerce_agent.approvals.service import ApprovalService
+from ecommerce_agent.observability.otel import InMemoryTracer, MetricsRegistry
 from ecommerce_agent.rag.chunker import chunk_markdown
 from ecommerce_agent.rag.hybrid_retriever import PersistentHybridRetriever
 from ecommerce_agent.rag.normalizer import normalize_markdown
@@ -18,6 +22,9 @@ class EnterpriseGraphState(TypedDict, total=False):
     message: str
     route: str
     result: dict[str, Any]
+    plan: list[str]
+    reflection: str
+    analysis: str
 
 
 def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -> Any:
@@ -26,6 +33,9 @@ def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -
     from langgraph.graph import END, START, StateGraph
 
     graph = StateGraph(EnterpriseGraphState)
+
+    def planner(state: EnterpriseGraphState) -> EnterpriseGraphState:
+        return cast(EnterpriseGraphState, planner_node(cast(AgentState, state)))
 
     def supervisor(state: EnterpriseGraphState) -> EnterpriseGraphState:
         message = state["message"]
@@ -39,6 +49,11 @@ def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -
 
     async def commerce(state: EnterpriseGraphState) -> EnterpriseGraphState:
         return {"result": await service.answer(state["message"])}
+
+    def analyst(state: EnterpriseGraphState) -> EnterpriseGraphState:
+        result = state.get("result", {})
+        observations = result.get("data", [])
+        return cast(EnterpriseGraphState, analyst_node({"observations": observations}))
 
     def knowledge(state: EnterpriseGraphState) -> EnterpriseGraphState:
         return {
@@ -61,15 +76,26 @@ def build_multi_agent_graph(service: AgentService, approvals: ApprovalService) -
             action = "product.update"
         return {"result": approvals.propose(action, {"request": message}, str(uuid4()))}
 
+    def reflection(state: EnterpriseGraphState) -> EnterpriseGraphState:
+        result = state.get("result", {})
+        check = reflection_node({"answer": str(result.get("answer", "")), "citations": result.get("citations", [])})
+        return {"reflection": check["reflection"]}
+
+    graph.add_node("planner", planner)
     graph.add_node("supervisor", supervisor)
     graph.add_node("commerce", commerce)
+    graph.add_node("analyst", analyst)
     graph.add_node("knowledge", knowledge)
     graph.add_node("safety", safety)
-    graph.add_edge(START, "supervisor")
+    graph.add_node("reflection", reflection)
+    graph.add_edge(START, "planner")
+    graph.add_edge("planner", "supervisor")
     graph.add_conditional_edges("supervisor", lambda state: state["route"], {"commerce": "commerce", "knowledge": "knowledge", "safety": "safety"})
-    graph.add_edge("commerce", END)
-    graph.add_edge("knowledge", END)
-    graph.add_edge("safety", END)
+    graph.add_edge("commerce", "analyst")
+    graph.add_edge("analyst", "reflection")
+    graph.add_edge("knowledge", "reflection")
+    graph.add_edge("safety", "reflection")
+    graph.add_edge("reflection", END)
     return graph.compile(checkpointer=InMemorySaver())
 
 
@@ -96,11 +122,17 @@ class EcommerceAgentGraph:
         service: AgentService,
         approvals: ApprovalService | None = None,
         persistent_retriever: PersistentHybridRetriever | None = None,
+        checkpoint: RunCheckpointPort | None = None,
+        tracer: InMemoryTracer | None = None,
+        metrics: MetricsRegistry | None = None,
     ) -> None:
         self.service = service
         self.approvals = approvals or ApprovalService()
         self.retriever = InMemoryRetriever()
         self.persistent_retriever = persistent_retriever
+        self.checkpoint = checkpoint or InMemoryRunCheckpoint()
+        self.tracer = tracer or InMemoryTracer()
+        self.metrics = metrics or MetricsRegistry()
         self.multi_agent = build_multi_agent_graph(service, self.approvals)
 
     def ingest(self, source_uri: str, markdown: str) -> int:
@@ -115,8 +147,8 @@ class EcommerceAgentGraph:
             await self.persistent_retriever.add_markdown(source_uri, markdown, chunks)
         return count
 
-    async def run(self, message: str) -> dict[str, Any]:
-        run_id = str(uuid4())
+    async def run(self, message: str, thread_id: str | None = None) -> dict[str, Any]:
+        run_id = thread_id or str(uuid4())
         if self.persistent_retriever is not None:
             persistent_evidence = await self.persistent_retriever.search(message)
             evidence = [
@@ -125,17 +157,32 @@ class EcommerceAgentGraph:
         else:
             evidence = self.retriever.search(message)
         if evidence:
-            return {
+            result = {
                 "run_id": run_id,
                 "type": "knowledge",
                 "answer": "\n\n".join(item.chunk.content for item in evidence),
                 "citations": [item.citation for item in evidence],
             }
+            self.checkpoint.save(run_id, result)
+            self._observe(result)
+            return result
         state = await self.multi_agent.ainvoke({"message": message}, {"configurable": {"thread_id": run_id}})
         result = dict(state["result"])
         result["run_id"] = run_id
         result["route"] = state["route"]
+        self.checkpoint.save(run_id, result)
+        self._observe(result)
         return result
+
+    def _observe(self, result: dict[str, Any]) -> None:
+        with self.tracer.start_span("agent.run", {"route": result.get("route", "knowledge")}):
+            pass
+        self.metrics.inc("agent_runs")
+        if result.get("status") == "blocked":
+            self.metrics.inc("agent_failures")
+
+    async def resume(self, thread_id: str, patch: dict[str, Any]) -> dict[str, Any]:
+        return await self.checkpoint.resume(thread_id, patch)
 
     def propose(self, action: str, arguments: dict[str, Any]) -> dict[str, Any]:
         return self.approvals.propose(action, arguments, str(uuid4()))

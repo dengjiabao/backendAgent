@@ -40,6 +40,8 @@ class ApprovalService:
             "risk": risk.value,
             "approval_id": record.id,
             "run_id": run_id,
+            "action": action,
+            "arguments": record.arguments,
         }
 
     def decide(self, approval_id: str, decision: str, operator: str, comment: str | None = None) -> ApprovalRecord:

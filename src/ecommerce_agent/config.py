@@ -21,6 +21,7 @@ class Settings(BaseModel):
     state_backend: Literal["memory", "database"] = "memory"
     database_url: str = "sqlite+pysqlite:///./data/ecommerce_agent.db"
     redis_url: str = "redis://127.0.0.1:6379/0"
+    jwt_secret: SecretStr = SecretStr("development-only-change-me")
 
     def __init__(self, _env_file: str | None = ".env", **data: Any) -> None:
         del _env_file
@@ -39,6 +40,7 @@ class Settings(BaseModel):
             "state_backend": os.getenv("STATE_BACKEND", "memory"),
             "database_url": os.getenv("DATABASE_URL", "sqlite+pysqlite:///./data/ecommerce_agent.db"),
             "redis_url": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
+            "jwt_secret": SecretStr(os.getenv("JWT_SECRET", "development-only-change-me")),
         }
         if api_key := os.getenv("MODEL_API_KEY"):
             env_data["model_api_key"] = SecretStr(api_key)
